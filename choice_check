@@ -1,0 +1,289 @@
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+
+#define EV_MAX 6
+#define FLOOR_MAX 20
+#define SECONDLINE 40
+#define WAIT 2
+#define QUE_MAX 10
+#define abs(x) ((x)>0 ? (x) : -(x))   // 절댓값 많이 필요할 것 같아 추가
+
+
+struct elevator {
+
+	int current;
+	int stop[FLOOR_MAX];
+	int people;
+	int dooropen; //열릴경우가 아니라면 0	
+};
+
+struct elevator EV[EV_MAX];
+
+int dist_time(int ev_num, int from);  // input인 from층 까지의 시간을 구하는 함수
+int min(int list[EV_MAX], int from); // 가장 빨리 올 수 있는 엘레베이터를 찾는 함수
+int choice_EV(int from, int to); // 요청에 따라 엘레베이터를 배정해주는 함수.
+
+int front = 0;
+int rear = 1;
+int number = 0;
+
+void enQue(int from, int to);
+void deQue(void);
+int QisEmpty(void);
+
+struct Queue {
+	int from;
+	int to;
+	int num;
+};
+
+
+struct Queue Que[QUE_MAX];
+struct Queue deq;
+
+int list[EV_MAX];      //choice 함수에서 엘레베이터 제한시 사용
+
+
+int movement_define(int EVnum);
+
+
+
+int main(void)
+{
+	int from = 15;
+	int to = 10;
+
+	printf("%d\n", choice_EV(from, to));
+
+
+	printf("%d\n", choice_EV(19, 1));
+
+
+}
+
+
+
+
+int low_high(int from, int to)
+{
+	if (from < 11 && to < 11)
+		return -1;                //저층용
+
+	else if (from > 10 && to > 10)
+		return 1;                //고층용
+
+	else if (from > 10 && to == 1)
+		return 1;                //고층용
+
+	else if (from == 1 && to > 10)
+		return 1;                //고층용
+	else
+		return 0;               // 전층용
+}
+
+void list_low_high(int from, int to)
+{
+	switch (low_high(from, to))
+	{
+	case -1:
+		list[2] = 0;
+		list[3] = 0;
+		break;
+	case 1:
+		list[0] = 0;
+		list[1] = 0;
+		break;
+	case 0:
+		for (int i = 0; i < 4; i++)
+			list[i] = 0;
+	}
+}
+
+
+
+int choice_EV(int from, int to)
+{
+	int choice=100;
+
+	int choice_flag = 0;
+
+	for (int i = 0; i<EV_MAX; i++)
+		for (int j = 0; j<FLOOR_MAX; j++)
+			choice_flag += EV[i].stop[j];
+
+
+	for (int i = 0; i < EV_MAX; i++)	//초기화
+		list[i] = 0;
+
+	if (choice_flag == 0)                     //엘레베이터가 모두 멈춰있으면,
+	{
+		for (int i = 0; i < EV_MAX; i++)
+			list[i] = 1;                     //모든 엘레베이터가 탐색대상.
+
+
+		list_low_high(from, to);
+		choice = min(list, from);
+	}
+
+	else if (to - from > 0)
+	{
+		for (int i = 0; i < EV_MAX; i++)
+		{
+			if (movement_define(i) == 0)
+				list[i] = 1;
+
+			if (movement_define(i) == 1)
+				if (EV[i].current <= from)
+					//					if (from < destination(i))            //destination 층과 현재층 사이에 요청층이있으면 
+					list[i] = 1;
+
+		}
+		list_low_high(from, to);
+		choice = min(list, from);
+	}
+
+	else if (to - from < 0)
+	{
+		for (int i = 0; i < EV_MAX; i++)
+		{
+			if (movement_define(i) == 0)
+				list[i] = 1;
+
+			if (movement_define(i) == -1)
+				if (EV[i].current >= from)
+					//					if (from > destination(i))             //destination 층과 현재층 사이에 요청층이있으면 
+					list[i] = 1;
+
+		}
+		list_low_high(from, to);
+		choice = min(list, from);
+	}
+
+
+
+	if (choice == -1) // 아무것도 선택되지 않으면, 즉 , 이용가능 엘레베이터가 없으면
+	{
+		enQue(from, to);
+		return 6;
+	}
+
+	else
+	{
+		EV[choice].stop[from] = 2;
+		EV[choice].stop[to] = 1;
+		return choice;
+
+	}
+}
+
+int min(int list[EV_MAX], int from)    //거리가 가장 최소인 엘레베이터를 찾아주는 함수
+{
+	int temp = 100;     // min찾는 알고리즘 사용.
+	int select = -1;
+	for (int i = 0; i<EV_MAX; i++)
+		if (list[i] == 1)        //list가 1일 때 탐색대상.
+		{
+			if (dist_time(i, from) < temp)
+			{
+				temp = dist_time(i, from);
+				select = i;
+			}
+		}
+
+	return select;
+}
+
+
+int dist_time(int ev_num, int from)  // input인 from층 까지의 시간를 구하는 함수
+{
+	int dist;
+
+	dist = abs(EV[ev_num].current - from);
+
+	if (EV[ev_num].current < from)
+		for (int i = EV[ev_num].current; i < from; i = i++)
+			if (EV[ev_num].stop[i] != 0)
+				dist++;
+
+			else if (EV[ev_num].current > from)
+				for (int i = EV[ev_num].current; i > from; i = i--)
+					if (EV[ev_num].stop[i] != 0)
+						dist++;
+
+	return dist;
+}
+
+/*
+int destination(int ev_num)
+{
+EV[ev_num].
+
+
+}
+*/
+
+void enQue(int from, int to)
+{
+	number++;
+	Que[rear].from = from;
+	Que[rear].to = to;
+	Que[rear].num = number;
+	rear++;
+	rear = rear % 10;
+
+}
+
+
+void deQue(void)
+{
+	front++;
+	front = front % QUE_MAX;
+	deq.from = Que[front].from;
+	deq.to = Que[front].to;
+	deq.num = Que[front].num;
+}
+
+int QisEmpty(void)
+{
+	if ((rear - front) % 10 == 1)
+		return 1;
+	else
+		return 0;
+
+}
+
+
+int movement_define(int EVnum) {
+
+	int depart = EV[EVnum].current;
+	int count = 0, low = 0, high = 0;
+
+	for (int i = 0; i<FLOOR_MAX; i++) {
+		if (EV[EVnum].stop[i]>0) {
+			count++;
+			if (EV[EVnum].stop[i] == 2) depart = i;
+
+			if (i<EV[EVnum].current) low++;
+			else if (i>EV[EVnum].current) high++;
+
+		}
+	}
+
+	if (count == 0) return 0;
+	else {
+		if (EV[EVnum].current != depart) {//출발층이 존재
+			if (EV[EVnum].current<depart) return 1;//상승
+			else return -1;//하강
+
+		}
+		else {
+			if (low>high) return -1;		//하강
+			else if (low<high) return 1;	//상승
+			else return 0;
+		}
+	}
+
+
+
+}
