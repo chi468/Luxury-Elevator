@@ -23,6 +23,9 @@ struct elevator EV[EV_MAX];
 int dist_time(int ev_num, int from);  // input인 from층 까지의 시간을 구하는 함수
 int min(int list[EV_MAX], int from); // 가장 빨리 올 수 있는 엘레베이터를 찾는 함수
 int choice_EV(int from, int to); // 요청에 따라 엘레베이터를 배정해주는 함수.
+int low_high(int from, int to);
+void list_low_high(int from, int to);
+
 
 int front = 0;
 int rear = 1;
@@ -56,8 +59,16 @@ int main(void)
 
 	printf("%d\n", choice_EV(from, to));
 
+	printf("%d\n", low_high(from, to));
+
+	printf("dist_time = %d\n", dist_time(1, from));
 
 	printf("%d\n", choice_EV(19, 1));
+
+	printf("%d\n", low_high(19, 1));
+
+	
+
 
 
 }
@@ -104,7 +115,7 @@ void list_low_high(int from, int to)
 
 int choice_EV(int from, int to)
 {
-	int choice=100;
+	int choice = 100;
 
 	int choice_flag = 0;
 
