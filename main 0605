@@ -242,7 +242,7 @@ void *thread_timeflow(){
 			int temp;
 			deQue();
 			temp=choice_EV(deq.from,deq.to);
-			if(temp<EV_MAX||temp>=0) history_message(deq.from,deq.to,temp,deq.num);
+			if(temp<EV_MAX&&temp>=0) history_message(deq.from,deq.to,temp,deq.num);
 			//EV를 배정받은경우 출력
 		}
 
