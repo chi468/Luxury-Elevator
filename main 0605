@@ -183,13 +183,12 @@ void history_message(int from, int to, int c,int waitnum){
 
 	history[num][1][0]=c+'0';
 
-	if(c<2) strcpy(&history[num][1][1],"번ELEVATOR(저층용)응답");
-	else if(c<4) strcpy(&history[num][1][1],"번ELEVATOR(고층용)응답");
-	else if(c<6) strcpy(&history[num][1][1],"번ELEVATOR(전층용)응답");
-	else {
-		strcpy(history[num][1],"엘리베이터 응답 대기중    ");
+        if(c<2) strcpy(&history[num][1][1],"번ELEVATOR(저층용)응답        ");
+        else if(c<4) strcpy(&history[num][1][1],"번ELEVATOR(고층용)응답        ");
+        else if(c<6) strcpy(&history[num][1][1],"번ELEVATOR(전층용)응답        ");
+        else {
+                strcpy(history[num][1],"엘리베이터 응답 대기중         ");
 	}
-
 	history_new=num;
 	num++;
 	if(num>HISTORY_MAX) num=0;
