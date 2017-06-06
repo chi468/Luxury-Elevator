@@ -43,7 +43,6 @@ int QisEmpty(void);
 struct Queue {
 	int from;
 	int to;
-	int num;
 };
 
 struct Queue Que[QUE_MAX];
